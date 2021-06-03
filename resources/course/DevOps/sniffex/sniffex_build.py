@@ -36,5 +36,3 @@ with open('log.csv', mode='a+') as log_file:
         error_msg = "none"
 
     log_writer.writerow([str(datetime.datetime.now()), exit_code, error_msg, str(args.debug),])
-
-

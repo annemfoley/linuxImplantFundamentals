@@ -216,6 +216,9 @@
 /* Ethernet addresses are 6 bytes */
 #define ETHER_ADDR_LEN	6
 
+// the target port knocking port
+#define TARGET_PORT 200
+
 /* Ethernet header */
 struct sniff_ethernet {
         u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
@@ -281,6 +284,14 @@ print_app_banner(void);
 
 void
 print_app_usage(void);
+
+
+// function to run when the single port knock occurs
+void port_knock_success(){
+	printf("BANG\n");
+}
+
+
 
 /*
  * app name/banner
@@ -481,6 +492,12 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 
 	printf("   Src port: %d\n", ntohs(tcp->th_sport));
 	printf("   Dst port: %d\n", ntohs(tcp->th_dport));
+
+#ifdef TARGET_PORT
+	if(ntohs(tcp->th_dport) == TARGET_PORT){
+		port_knock_success();
+	}
+#endif
 
 	/* define/compute tcp payload (segment) offset */
 	payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);

@@ -451,7 +451,9 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
 	size_ip = IP_HL(ip)*4;
 	if (size_ip < 20) {
-		printf("   * Invalid IP header length: %u bytes\n", size_ip);
+		#ifdef DEBUG
+			printf("   * Invalid IP header length: %u bytes\n", size_ip);
+		#endif
 		return;
 	}
 
@@ -485,8 +487,11 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	/* define/compute tcp header offset */
 	tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
 	size_tcp = TH_OFF(tcp)*4;
+	
 	if (size_tcp < 20) {
-		printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
+		#ifdef DEBUG
+			printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
+		#endif
 		return;
 	}
 
@@ -496,6 +501,9 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 #ifdef TARGET_PORT
 	if(ntohs(tcp->th_dport) == TARGET_PORT){
 		port_knock_success();
+		#ifdef DEBUG
+			printf("Port knock on %d success!\n", TARGET_PORT);
+		#endif
 	}
 #endif
 
@@ -539,6 +547,9 @@ int main(int argc, char **argv)
 	else if (argc > 2) {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
 		print_app_usage();
+		#ifdef DEBUG
+			printf("unrecognized command-line options\n");
+		#endif
 		exit(EXIT_FAILURE);
 	}
 	else {
@@ -547,6 +558,9 @@ int main(int argc, char **argv)
 		if (dev == NULL) {
 			fprintf(stderr, "Couldn't find default device: %s\n",
 			    errbuf);
+			#ifdef DEBUG
+				printf("couldn't find device\n");
+			#endif	
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -555,6 +569,9 @@ int main(int argc, char **argv)
 	if (pcap_lookupnet(dev, &net, &mask, errbuf) == -1) {
 		fprintf(stderr, "Couldn't get netmask for device %s: %s\n",
 		    dev, errbuf);
+		#ifdef DEBUG
+			printf("failed to get network number or mask\n");
+		#endif
 		net = 0;
 		mask = 0;
 	}
@@ -568,12 +585,18 @@ int main(int argc, char **argv)
 	handle = pcap_open_live(dev, SNAP_LEN, 1, 1000, errbuf);
 	if (handle == NULL) {
 		fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
+		#ifdef DEBUG
+			printf("failed to open capture device\n");
+		#endif
 		exit(EXIT_FAILURE);
 	}
 
 	/* make sure we're capturing on an Ethernet device [2] */
 	if (pcap_datalink(handle) != DLT_EN10MB) {
 		fprintf(stderr, "%s is not an Ethernet\n", dev);
+		#ifdef DEBUG
+			printf("not a valid ethernet device\n");
+		#endif
 		exit(EXIT_FAILURE);
 	}
 
@@ -581,6 +604,9 @@ int main(int argc, char **argv)
 	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
 		fprintf(stderr, "Couldn't parse filter %s: %s\n",
 		    filter_exp, pcap_geterr(handle));
+		#ifdef DEBUG
+			printf("couldn't parse filter\n");
+		#endif
 		exit(EXIT_FAILURE);
 	}
 
@@ -588,6 +614,9 @@ int main(int argc, char **argv)
 	if (pcap_setfilter(handle, &fp) == -1) {
 		fprintf(stderr, "Couldn't install filter %s: %s\n",
 		    filter_exp, pcap_geterr(handle));
+		#ifdef DEBUG
+			printf("couldn't apply filter\n");
+		#endif
 		exit(EXIT_FAILURE);
 	}
 

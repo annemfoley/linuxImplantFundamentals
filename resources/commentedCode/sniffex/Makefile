@@ -3,8 +3,8 @@ CFLAGS = -lpcap
 
 ODIR = obj
 
-sniffexMake: sniffex.c
+sniffex: sniffex.c
 	$(CC) -Wall -o sniffex sniffex.c $(CFLAGS)
 
 sniffexDebug: sniffex.c
-	$(CC) -DDEBUG -Wall -o sniffex sniffex.c $(CFLAGS)
+	$(CC) -DDEBUG -Wall -o sniffexDebug sniffex.c $(CFLAGS)

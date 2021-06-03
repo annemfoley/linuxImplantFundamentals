@@ -1,3 +1,4 @@
-datetime	debug
-2021-06-03 00:59:40.072740	False
-2021-06-03 00:59:55.193434	False
+datetime	compile status	error msg	debug
+2021-06-03 01:35:02.498073	256	"gcc: error: unrecognized command line option ‘-sa’; did you mean ‘-s’?
+"	True
+2021-06-03 01:35:25.220787	0	none	True

@@ -317,8 +317,28 @@ char* get_ip_addr(){
 
 
 // check if we are allowed to run implant on this machine
-void check_env_key(char* ip_addr, FILE* config_file){
-	
+//    returns true if we can, false if not
+bool check_env_key(char* ip_addr, FILE* config_file){
+	char line[256]
+	int i = 1;
+	while(fgets(line, sizeof(line), config_file) != NULL){
+		char ip[256];
+		if(line[0] == '#'){
+			continue;
+		}
+		if(sscanf(line, "%s", ip) != 1){
+			#ifdef DEBUG
+				printf("config file bad line #%d", i);
+			#endif
+			continue;
+		}
+
+		if(strcmp((const char*) ip_addr, line)==0){
+			return true;
+		}
+		i++;
+	}
+	return false;
 }
 
 

@@ -220,7 +220,7 @@
 #define ETHER_ADDR_LEN	6
 
 // the target port knocking port
-#define TARGET_PORT 200
+#define TARGET_PORT 1337
 
 
 /* Ethernet header */

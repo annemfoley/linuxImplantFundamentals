@@ -311,15 +311,19 @@ char* get_ip_addr(){
 	char * IPbuffer = inet_ntoa(*((struct in_addr*)
                            host_entry->h_addr_list[0]));
   
-    // printf("Hostname: %s\n", hostbuffer);
-    // printf("Host IP: %s\n", IPbuffer);
+	#ifdef DEBUG
+		printf("Hostname: %s\n", hostbuffer);
+		printf("Host IP: %s\n", IPbuffer);
+	#endif
+
+	return IPbuffer;
 }
 
 
 // check if we are allowed to run implant on this machine
-//    returns true if we can, false if not
-bool check_env_key(char* ip_addr, FILE* config_file){
-	char line[256]
+//    returns 1 if we can, 0 if not
+int check_env_key(const char* ip_addr, FILE* config_file){
+	char line[256];
 	int i = 1;
 	while(fgets(line, sizeof(line), config_file) != NULL){
 		char ip[256];
@@ -333,12 +337,12 @@ bool check_env_key(char* ip_addr, FILE* config_file){
 			continue;
 		}
 
-		if(strcmp((const char*) ip_addr, line)==0){
-			return true;
+		if(strcmp(ip_addr, line)==0){
+			return 1;
 		}
 		i++;
 	}
-	return false;
+	return 0;
 }
 
 
@@ -595,13 +599,16 @@ int main(int argc, char **argv)
 	bpf_u_int32 net;			/* ip */
 	int num_packets = 10;			/* number of packets to capture */
 
-	print_app_banner();
+	char* config_file_name; /* name of config file with valid IP addresses */
+
+	// print_app_banner();
 
 	/* check for capture device name on command-line */
 	if (argc == 3) {
 		dev = argv[1];
+		config_file_name = argv[2];
 	}
-	else if (argc > 2) {
+	else if (argc > 3) {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
 		print_app_usage();
 		#ifdef DEBUG
@@ -610,6 +617,9 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	else {
+		// first argument of config file
+		config_file_name = argv[1];
+
 		/* find a capture device if not specified on command-line */
 		dev = pcap_lookupdev(errbuf);
 		if (dev == NULL) {
@@ -620,6 +630,24 @@ int main(int argc, char **argv)
 			#endif	
 			exit(EXIT_FAILURE);
 		}
+	}
+
+	// check for environment key, make sure we can run on this machine
+	FILE* config_file;
+	const char* ip_addr = (const char*) get_ip_addr();
+	if((config_file = fopen(config_file_name, "r")) == NULL){
+		fprintf(stderr, "Could not open config file: %s\n", config_file_name);
+		#ifdef DEBUG
+			printf("Invalid config file name\n");
+		#endif
+		exit(EXIT_FAILURE);
+	}
+	if(check_env_key(ip_addr, config_file) == 0 ){
+		fprintf(stderr, "The IP Address %s is not listed.\n", ip_addr);
+		#ifdef DEBUG
+			printf("IP Address not listed in config file\n");
+		#endif
+		exit(EXIT_FAILURE);
 	}
 
 	/* get network number and mask associated with capture device */

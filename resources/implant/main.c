@@ -13,16 +13,13 @@ int main(int argc, char **argv)
 	bpf_u_int32 net;				/* ip */
 	int num_packets = 100;			/* number of packets to capture */
 
-	char* config_file_name; 		/* name of config file with valid IP addresses */
-
 	// print_app_banner();
 
 	/* check for capture device name on command-line */
-	if (argc == 3) {
+	if (argc == 2) {
 		dev = argv[1];
-		config_file_name = argv[2];
 	}
-	else if (argc > 3) {
+	else if (argc > 2) {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
 		print_app_usage();
 		#ifdef DEBUG
@@ -31,8 +28,6 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	else {
-		// first argument of config file
-		config_file_name = argv[1];
 
 		/* find a capture device if not specified on command-line */
 		dev = pcap_lookupdev(errbuf);
@@ -47,17 +42,9 @@ int main(int argc, char **argv)
 	}
 
 	// check for environment key, make sure we can run on this machine
-	FILE* config_file;
 	const char* ip_addr = (const char*) get_ip_addr();
-	if((config_file = fopen(config_file_name, "r")) == NULL){
-		fprintf(stderr, "Could not open config file: %s\n", config_file_name);
-		#ifdef DEBUG
-			printf("Invalid config file name\n");
-		#endif
-		exit(EXIT_FAILURE);
-	}
-	if(check_env_key(ip_addr, config_file) == 0 ){
-		fprintf(stderr, "The IP Address %s is not listed.\n", ip_addr);
+	if(check_env_key(ip_addr) == 0){
+		fprintf(stderr, "The IP Address %s is not valid.\n", ip_addr);
 		#ifdef DEBUG
 			printf("IP Address not listed in config file\n");
 		#endif
@@ -120,6 +107,10 @@ int main(int argc, char **argv)
 		#endif
 		exit(EXIT_FAILURE);
 	}
+
+
+	// initialize variables for knocking
+	init_knocking();
 
 	/* now we can set our callback function */
 	pcap_loop(handle, num_packets, got_packet, NULL);

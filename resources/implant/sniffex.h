@@ -1,18 +1,5 @@
-#include "functionality.h"
+#include "helper.h"
 
-#include <pcap.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
 
 
 /* Ethernet header */
@@ -90,25 +77,12 @@ print_app_usage(void);
 
 // -----------------------------  M Y   M O D I F I C A T I O N S  ----------------------------------
 
-int* knock_states;
-
-void
-init_knocking();
-
-void
-update_knock_state(int dst_port);
-
-void
-knocked_1();
-
-void
-knocked_2();
-
-void
-knocked_3();
 
 char*
 get_ip_addr();
 
 int
 check_env_key(const char* ip_addr);
+
+void
+uninstall();

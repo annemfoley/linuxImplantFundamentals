@@ -10,6 +10,7 @@ are equal to what you want them to be and return true / false */
 #include <unistd.h>
 #include <string.h>
 #define UTS_SYSNAME "Linux"
+#define UTS_MACHINE "x86_64"
 #define STRING ""
 
 int main( int argc, char *argv[] )
@@ -19,6 +20,11 @@ int main( int argc, char *argv[] )
   uname(&uts);
 #ifdef UTS_SYSNAME
   if (strcmp(uts.sysname, UTS_SYSNAME)!=0){
+    return -1;
+  }
+#endif
+#ifdef UTS_MACHINE
+  if (strcmp(uts.machine, UTS_MACHINE)!=0){
     return -1;
   }
 #endif

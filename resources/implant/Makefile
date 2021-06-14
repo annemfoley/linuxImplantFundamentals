@@ -1,13 +1,16 @@
 CC = gcc
 CFLAGS = -Wall -o
 
-default: main
+default: implant
 
-main: sniffex.c sniffex.h main.c
-	$(CC) $(CFLAGS) main sniffex.c main.c -lpcap
+implant: sniffex.c sniffex.h implantMain.c
+	$(CC) $(CFLAGS) implant sniffex.c helper.c implantMain.c -lpcap
 
-mainDebug: sniffex.c sniffex.h main.c
-	$(CC) -DDEBUG $(CFLAGS) mainDebug sniffex.c main.c -lpcap
+implant32: sniffex.c sniffex.h implantMain.c
+	$(CC) $(CFLAGS) -m32 implant sniffex.c helper.c implantMain.c -lpcap
+
+implantDebug: sniffex.c sniffex.h implantMain.c
+	$(CC) -DDEBUG $(CFLAGS) implantDebug sniffex.c helper.c implantMain.c -lpcap
 
 clean:
-	$(RM) main mainDebug *.o *~
+	$(RM) implant implantDebug *.o *~

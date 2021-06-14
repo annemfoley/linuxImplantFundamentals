@@ -1,4 +1,20 @@
 
+#include <pcap.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <signal.h>
+
+
 #define APP_NAME		"sniffex"
 #define APP_DESC		"Sniffer example using libpcap"
 #define APP_COPYRIGHT	"Copyright (c) 2005 The Tcpdump Group"
@@ -33,6 +49,14 @@
 
 // valid ip address to run this implant on
 #define VALID_IP "127.0.1.1"
+
+// number of packets to look for
+#define NUM_PACKETS 10
+
+
+// for handling signal interrupts
+#define SIGINT 2
+
 
 // bytes in payload to check against
 // #define TARGET_STR "qwerty"
